@@ -1,0 +1,7 @@
+.venv/
+.DS_Store
+__pycache__/
+photo.png
+photo1.png
+photo2.png
+models/checkpoints/best_model.pt
