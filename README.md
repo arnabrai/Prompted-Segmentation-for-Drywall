@@ -24,8 +24,9 @@ Given an image and a text prompt (e.g., `"segment crack"`, `"segment taping area
 - **Architecture**: CLIP vision-language backbone + lightweight decoder for dense prediction
 - **Why CLIPSeg?**: Native text-conditioning allows zero-shot generalization; fine-tuning adapts it to domain-specific drywall imagery
 - **Training Strategy**: End-to-end fine-tuning with combined BCE + Dice loss
-- **Test-Time Augmentation (TTA)**: Horizontal flip, vertical flip, and 90 degree rotation -- predictions averaged for robustness
+- **Test-Time Augmentation (TTA)**: Horizontal flip, vertical flip, and 90° rotation — predictions averaged for robustness
 - **Threshold Tuning**: Optimal threshold of **0.35** selected via grid search over validation set
+- **Reproducibility**: All random seeds set to `42` (`torch.manual_seed`, `np.random.seed`, `random.seed`)
 
 ### Pipeline
 
@@ -57,7 +58,16 @@ Input Image + Text Prompt
 | **Format** | COCO to binary masks | COCO to binary masks |
 
 **Total**: 6,515 prompt-image-mask triplets
-**Split**: Train / Validation (stratified by dataset)
+
+### Data Split
+
+| Split | Taping | Crack | Total |
+|-------|--------|-------|-------|
+| Train | 936 | 5,125 | 6,061 |
+| Val | 250 | 200 | 450 |
+| **Total** | **1,186** | **5,325** | **6,515** |
+
+> Stratified by dataset source. Validation split used for threshold tuning and final evaluation.
 
 ---
 
@@ -116,6 +126,15 @@ Input Image + Text Prompt
 
 ---
 
+## Limitations & Failure Cases
+
+- **Hairline cracks**: Very thin cracks (< 2px wide) are sometimes missed — CLIPSeg's 352×352 input resolution limits fine detail
+- **Low-contrast taping**: Taping areas on similarly-colored drywall can be under-segmented
+- **Overlapping annotations**: Some Roboflow images have noisy ground truth from COCO polygon conversion, affecting metrics
+- **Class imbalance**: Crack dataset (5,125 train) significantly outnumbers taping (936 train), which may bias overall learning
+
+---
+
 ## Repository Structure
 
 ```
@@ -142,8 +161,6 @@ drywall-prompted-seg/
 |   |-- zero_shot_results.png
 |   |-- sample_predictions.png
 |   +-- sample_verification.png
-+-- report/
-    +-- figures/                # Report-specific figures
 ```
 
 ---
@@ -151,8 +168,16 @@ drywall-prompted-seg/
 ## Quick Start
 
 ### Prerequisites
+> **Important**: The fine-tuned model checkpoint is managed by Git LFS due to its size (584 MB). Ensure you have [Git LFS](https://git-lfs.github.com/) installed before cloning.
+
 ```bash
-pip install torch torchvision transformers opencv-python-headless albumentations scikit-learn roboflow
+# Clone the repository and pull the large model weights
+git lfs install
+git clone <repository_url>
+git lfs pull
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
 ### Inference
